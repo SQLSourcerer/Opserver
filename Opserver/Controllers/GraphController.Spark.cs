@@ -143,12 +143,12 @@ namespace StackExchange.Opserver.Controllers
         {
             var instance = SQLInstance.Get(node);
             if (instance == null) return ContentNotFound($"SQLNode not found with name = '{node}'");
-            var start = DateTime.UtcNow.AddHours(-1);
+            var start = instance.ResourceHistory.Data?.Last().EventTime.AddHours(-1);
             var points = instance.ResourceHistory.Data?.Where(p => p.EventTime >= start).ToList();
 
             if (points == null || points.Count == 0) return EmptySparkSVG();
 
-            return SparkSVG(points, 100, p => p.ProcessUtilization, start);
+            return SparkSVG(points, 100, p => p.ProcessUtilization, start, start?.AddHours(1));
         }
 
         public static async Task<ActionResult> SparkSvgAll<T>(Func<Node, Task<List<T>>> getPoints, Func<Node, List<T>, long> getMax, Func<T, double> getVal) where T : IGraphPoint
@@ -224,11 +224,11 @@ namespace StackExchange.Opserver.Controllers
             return new FileContentResult(bytes, "image/svg+xml");
         }
 
-        private static FileResult SparkSVG<T>(IEnumerable<T> points, long max, Func<T, double> getVal, DateTime? start = null) where T : IGraphPoint
+        private static FileResult SparkSVG<T>(IEnumerable<T> points, long max, Func<T, double> getVal, DateTime? start = null, DateTime? end = null) where T : IGraphPoint
         {
             const int height = SparkHeight,
                       width = SparkPoints;
-            long nowEpoch = DateTime.UtcNow.ToEpochTime(),
+            long nowEpoch = (end ?? DateTime.UtcNow).ToEpochTime(),
                 startEpoch = (start ?? SparkStart).ToEpochTime(),
                 divisor = max/50;
             var range = (nowEpoch - startEpoch)/(float)width;
