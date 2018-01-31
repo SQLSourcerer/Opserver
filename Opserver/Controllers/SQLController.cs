@@ -230,7 +230,7 @@ namespace StackExchange.Opserver.Controllers
             var vd = new DatabasesModel
             {
                 Instance = i,
-                Database = database,
+                Database = Server.UrlDecode(database),
                 ObjectName = objectName
             };
             switch (view)
